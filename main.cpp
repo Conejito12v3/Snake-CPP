@@ -1,8 +1,10 @@
-#include<iostream>
-#include<string>
-#include<Windows.h>
-#include<list>
-#include<array>
+#include <iostream>
+#include <string>
+#include <Windows.h>
+#include <list>
+#include <array>
+#include <cstdlib>  
+#include <ctime>    
 using namespace std;
 
 void gotoXY(int x, int y) {
@@ -16,27 +18,25 @@ void cargarMapa(string mapa[20][20]) {
     for (int i = 0; i < 20; i++) {
         for (int j = 0; j < 20; j++) {
             if (i == 0 || i == 19) {
-                mapa[i][j] = "==="; // Paredes
+                mapa[i][j] = "===";
             } else if (j == 0) {
-                mapa[i][j] = "|| "; // Paredes
+                mapa[i][j] = "|| ";
             } else if (j == 19) {
-                mapa[i][j] = " ||"; // Paredes
+                mapa[i][j] = " ||";
             } else {
-                mapa[i][j] = "   "; // Espacio vacío
+                mapa[i][j] = "   ";
             }
         }
     }
 }
 
 void cargarMapaLogico(string mapaLogico[20][20]) {
-    for (int i = 0; i < 20; i++) {
-        for (int j = 0; j < 20; j++) {
-            if (i == 0 || i == 19) {
-                mapaLogico[i][j] = "2"; // Paredes
-            } else if (j == 0 || j == 19) {
-                mapaLogico[i][j] = "2"; // Paredes
+    for (int y = 0; y < 20; y++) {
+        for (int x = 0; x < 20; x++) {
+            if (y == 0 || y == 19 || x == 0 || x == 19) {
+                mapaLogico[y][x] = "2"; // Pared
             } else {
-                mapaLogico[i][j] = "0"; // Espacio vacío
+                mapaLogico[y][x] = "0"; // Libre
             }
         }
     }
@@ -51,128 +51,113 @@ void dibujarMapa(string mapa[20][20]) {
     }
 }
 
+
+void generarManzana(string mapaLogico[20][20]) {
+    int x, y;
+    do {
+        x = rand() % 18 + 1; // entre 1 y 18
+        y = rand() % 18 + 1;
+    } while (mapaLogico[y][x] != "0"); // Repetir hasta encontrar una celda libre
+
+    mapaLogico[y][x] = "1";
+    gotoXY(x, y);
+    cout << "A";
+}
+
 void borrarSerpiente(list<array<int, 2>>& serpiente) {
     for (const auto& segmento : serpiente) {
         gotoXY(segmento[0], segmento[1]);
-        cout << "   "; // Borrar el segmento de la serpiente
+        cout << "   ";
     }
 }
 
 int moverSerpiente(list<array<int, 2>>& serpiente, char direccion, string mapaLogico[20][20]) {
-    array<int, 2> nuevaPosicion = *serpiente.begin();
-    array<int, 2> viejaPosicion = *serpiente.begin();
+    array<int, 2> cabeza = serpiente.front();
+    array<int, 2> nuevaPos = cabeza;
 
-    switch (direccion) {
-        case 'w': // Arriba
-            if (nuevaPosicion[1] > 1) nuevaPosicion[1]--;
-            else return 0; // Terminar el programa si se intenta mover fuera del mapa
-            if (mapaLogico[nuevaPosicion[0]][nuevaPosicion[1]] == "2") {
-                // Si la serpiente choca con una pared, terminar el juego
-                gotoXY(0, 21);
-                cout << "Game Over! Chocaste con una pared." << endl;
-                return 0; // Terminar el programa
-            }
-            if (mapaLogico[nuevaPosicion[0]][nuevaPosicion[1]] == "1") {
-                // Si la serpiente come una manzana, no eliminar el último segmento
-                serpiente.push_back(viejaPosicion);
-                mapaLogico[nuevaPosicion[1]][nuevaPosicion[0]] = "0"; // Eliminar la manzana
-                gotoXY(0,21);
-                cout << "Comiste una manzana!" << endl;
-            }
-            for (auto it = serpiente.begin(); it != serpiente.end(); ++it) {
-                if (it != serpiente.begin() && *it == nuevaPosicion) {
-                    // Si la serpiente choca consigo misma, terminar el juego
-                    gotoXY(0, 21);
-                    cout << "Game Over! Chocaste contigo mismo." << endl;
-                    return 0; // Terminar el programa
-                }
-            }
-            break;
-        case 's': // Abajo
-            if (nuevaPosicion[1] < 18) nuevaPosicion[1]++;
-            if (mapaLogico[nuevaPosicion[0]][nuevaPosicion[1]] == "1") {
-                // Si la serpiente come una manzana, no eliminar el último segmento
-                serpiente.push_front(nuevaPosicion);
-                mapaLogico[nuevaPosicion[1] - 1][nuevaPosicion[0]] = "0"; // Eliminar la manzana
-            }
-            break;
-        case 'a': // Izquierda
-            if (nuevaPosicion[0] > 1) nuevaPosicion[0]--;
-            if (mapaLogico[nuevaPosicion[0]][nuevaPosicion[1]] == "1") {
-                // Si la serpiente come una manzana, no eliminar el último segmento
-                serpiente.push_front(nuevaPosicion);
-                mapaLogico[nuevaPosicion[1] - 1][nuevaPosicion[0]] = "0"; // Eliminar la manzana
-            }
-            break;
-        case 'd': // Derecha
-            if (nuevaPosicion[0] < 18) nuevaPosicion[0]++;
-            if (mapaLogico[nuevaPosicion[0]][nuevaPosicion[1]] == "1") {
-                // Si la serpiente come una manzana, no eliminar el último segmento
-                serpiente.push_front(nuevaPosicion);
-                mapaLogico[nuevaPosicion[1] - 1][nuevaPosicion[0]] = "0"; // Eliminar la manzana
-            }
-            break;
+    if (direccion == 'w') nuevaPos[1]--;
+    else if (direccion == 's') nuevaPos[1]++;
+    else if (direccion == 'a') nuevaPos[0]--;
+    else if (direccion == 'd') nuevaPos[0]++;
+
+    int x = nuevaPos[0], y = nuevaPos[1];
+
+    if (mapaLogico[y][x] == "2") {
+        gotoXY(0, 21);
+        cout << "Game Over! Chocaste.";
+        return 0;
     }
 
-    serpiente.push_front(nuevaPosicion); // Añadir la nueva posición al frente
-    serpiente.pop_back(); // Eliminar la última posición de la serpiente
+    for (const auto& segmento : serpiente) {
+        if (segmento == nuevaPos) {
+            gotoXY(0, 21);
+            cout << "Game Over! Chocaste contigo mismo.";
+            return 0;
+        }
+    }
 
-    return 1; // Continuar el juego
+    bool comio = mapaLogico[y][x] == "1";
+
+    serpiente.push_front(nuevaPos);
+    mapaLogico[y][x] = "2"; // Marcar como ocupada por la serpiente
+
+    if (!comio) {
+        array<int, 2> cola = serpiente.back();
+        mapaLogico[cola[1]][cola[0]] = "0"; // Liberar casilla
+        serpiente.pop_back();
+    } else {
+        gotoXY(0, 21);
+        cout << "Comiste una manzana!";
+        generarManzana(mapaLogico);
+    }
+
+    return 1;
 }
 
 void dibujarSerpiente(const list<array<int, 2>>& serpiente) {
     for (const auto& segmento : serpiente) {
         gotoXY(segmento[0], segmento[1]);
-        cout << "^"; // Representación de la serpiente
+        cout << "^";
     }
 }
 
 int main() {
-    string mapaLogico[20][20], mapa[20][20];
+    string mapa[20][20], mapaLogico[20][20];
     list<array<int, 2>> serpiente;
-    char input; // Inicialmente hacia arriba
-    int a = 1;
-
-    serpiente.push_back({10, 10}); // Posición inicial de la serpiente
-
-    mapaLogico[10][9] = "1"; // Manzana en la posición (10, 9)
-    mapaLogico[10][10] = "2"; // Espacio ocupado por la serpiente
+    char input = 'w'; // Dirección inicial
 
     cargarMapa(mapa);
+    cargarMapaLogico(mapaLogico);
+
+    // Posición inicial
+    serpiente.push_back({10, 10});
+    mapaLogico[10][10] = "2";
+
+    // Manzana
+    srand(time(0)); // Inicializar la semilla aleatoria
+    
     dibujarMapa(mapa);
+    generarManzana(mapaLogico);
+    dibujarSerpiente(serpiente);
 
-    gotoXY(10, 9);
-    cout << "A"; // Representación de la manzana
+    int continuar = 1;
 
-    gotoXY((*serpiente.begin())[0], (*serpiente.begin())[1]); 
-    cout << "^"; // Representación de la serpiente
+    while (continuar) {
+        if (GetAsyncKeyState(VK_ESCAPE)) break;
 
-    while (a) {
-        if (GetAsyncKeyState(VK_ESCAPE)) {
-            break; // Salir del bucle si se presiona ESC
-        }
-        
-        if (GetAsyncKeyState(VK_UP)) {
-            input = 'w'; // Arriba
-        } else if (GetAsyncKeyState(VK_DOWN)) {
-            input = 's'; // Abajo
-        } else if (GetAsyncKeyState(VK_LEFT)) {
-            input = 'a'; // Izquierda
-        } else if (GetAsyncKeyState(VK_RIGHT)) {
-            input = 'd'; // Derecha
-        }
-        
-        a = moverSerpiente(serpiente, input, mapaLogico);
-        dibujarSerpiente(serpiente);
-        Sleep(100); // Espera para evitar un bucle demasiado rápido
+        if (GetAsyncKeyState(VK_UP)) input = 'w';
+        else if (GetAsyncKeyState(VK_DOWN)) input = 's';
+        else if (GetAsyncKeyState(VK_LEFT)) input = 'a';
+        else if (GetAsyncKeyState(VK_RIGHT)) input = 'd';
+
         borrarSerpiente(serpiente);
-        gotoXY(0, 22); // Volver al inicio de la consola
-        cout << a;
+        continuar = moverSerpiente(serpiente, input, mapaLogico);
+        dibujarSerpiente(serpiente);
+
+        Sleep(150);
     }
 
-    Sleep(10000); // Espera antes de cerrar
-
-    gotoXY(0, 21);
+    gotoXY(0, 23);
     system("pause");
     return 0;
 }
