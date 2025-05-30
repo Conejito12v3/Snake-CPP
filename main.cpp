@@ -84,7 +84,7 @@ int moverSerpiente(list<array<int, 2>>& serpiente, char direccion, string mapaLo
 
     if (mapaLogico[y][x] == "2") {
         gotoXY(0, 21);
-        cout << "Game Over! Chocaste.";
+        cout << "Game Over! Chocaste con pared.";
         return 0;
     }
 
@@ -99,7 +99,6 @@ int moverSerpiente(list<array<int, 2>>& serpiente, char direccion, string mapaLo
     bool comio = mapaLogico[y][x] == "1";
 
     serpiente.push_front(nuevaPos);
-    mapaLogico[y][x] = "2"; // Marcar como ocupada por la serpiente
 
     if (!comio) {
         array<int, 2> cola = serpiente.back();
